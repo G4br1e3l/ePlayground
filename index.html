@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ECharts Playground</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --bg-gradient: linear-gradient(135deg, #f0f4f8, #e4ebf1);
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+        body { 
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            padding: 10px;
+            color: #333;
+        }
+        .container { 
+            display: flex; 
+            gap: 20px; 
+            width: 100%; 
+        }
+        .panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .panel:hover { 
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15); 
+            transform: translateY(-5px);
+        }
+        .preview { 
+            flex: 2; 
+            min-width: 300px; 
+        }
+        .editor { 
+            flex: 1; 
+            min-width: 250px;
+            position: relative;
+        }
+        .panel-header {
+            padding: 12px;
+            background: #f4f4f4;
+            border-bottom: 1px solid #e0e0e0;
+            text-align: center;
+            font-weight: 500;
+        }
+        #chart { 
+            flex-grow: 1; 
+            min-height: 300px; 
+            transition: opacity 0.3s ease;
+        }
+        #chart:hover { opacity: 0.9; }
+        #echarts-code {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            resize: none;
+            font-family: 'Courier New', monospace;
+            min-height: calc(100% - 160px);
+            outline: none;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .actions {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: #f4f4f4;
+            border-top: 1px solid #e0e0e0;
+        }
+        .action-group {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        button.secondary {
+            background: var(--secondary-color);
+        }
+        button:hover { 
+            background: #0056b3; 
+            transform: scale(1.05);
+        }
+        #status { 
+            font-size: 0.8em; 
+            align-self: center; 
+            transition: color 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            .container { 
+                flex-direction: column; 
+                gap: 10px; 
+            }
+            .panel { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel preview">
+            <div class="panel-header">Preview</div>
+            <div id="chart"></div>
+        </div>
+        <div class="panel editor">
+            <div class="panel-header">ECharts Code</div>
+            <textarea id="echarts-code" placeholder='{"title":{"text":"Meu Gráfico"},"xAxis":{"data":["A","B","C"]},"yAxis":{},"series":[{"type":"bar","data":[10,20,30]}]}'></textarea>
+            <div class="actions">
+                <div class="action-group">
+                    <button id="btn-copy">Copiar Código</button>
+                    <button id="btn-template" class="secondary">Copiar Template</button>
+                </div>
+                <span id="status"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <script>
+    (() => {
+        const $ = (id) => document.getElementById(id);
+        const chart = echarts.init($('chart'));
+        
+        const CHART_TEMPLATE = `Quero um Design incrivel! Quero com animações aprimoradas incriveis!
+----[EXEMPLO]----
+{"title": { "text": "TÍTULO" }, // Aqui é o titulo
+"tooltip": { "trigger": "axis" }, // Exibir algo ao passar o mouse
+"legend": { "data": ["N1", "N2"] }, // Nomes das séries de legenda
+"xAxis": { "type": "category", "data": ["C1", "C2", "C3"] }, // Categorias no eixo X
+"yAxis": { "type": "value" }, // Eixo Y com escala de valores
+"series": [{ "name": "NOME1", "type": "T_1", "data": [V_1, V_2] },{ "name": "NOME2", "type": "T_2", "data": [V_4, V_5] }]}
+----[FIM DO EXEMPLO]----
+Use o EXEMPLO como base. Traga o código COMPLETO! Traga o código DETALHADO! Traga o código dinâmico e atrativo!`;
+
+        const renderChart = () => {
+            const val = $('echarts-code').value.trim();
+            const status = $('status');
+            if (!val) return;
+            try {
+                chart.setOption(JSON.parse(val), true);
+                status.textContent = '';
+            } catch(e) {
+                status.textContent = `Erro: ${e.message}`;
+                status.style.color = 'red';
+            }
+        };
+
+        const copyToClipboard = async (text) => {
+            const status = $('status');
+            try {
+                await navigator.clipboard.writeText(text);
+                status.textContent = 'Copiado!';
+                status.style.color = 'green';
+                setTimeout(() => { status.textContent = ''; }, 2000);
+            } catch(e) {
+                status.textContent = `Falha: ${e.message}`;
+                status.style.color = 'red';
+            }
+        };
+
+        $('echarts-code').addEventListener('input', renderChart);
+        $('btn-copy').addEventListener('click', () => copyToClipboard($('echarts-code').value));
+        $('btn-template').addEventListener('click', () => copyToClipboard(CHART_TEMPLATE));
+        
+        window.addEventListener('resize', () => chart.resize());
+        renderChart();
+    })();
+    </script>
+</body>
+</html>
